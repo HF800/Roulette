@@ -3,37 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tirage au sort d'options</title>
+    <title>Roulette - Tirage au sort</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .update-notice {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #ffeeba;
+        }
+        .update-notice.show {
+            display: block;
         }
         .container {
             display: flex;
+            flex-wrap: wrap;
             gap: 20px;
         }
-        .left-panel, .right-panel {
+        .panel {
             background-color: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .left-panel {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             flex: 1;
+            min-width: 300px;
         }
-        .right-panel {
-            flex: 1;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
+        h1, h2 {
+            color: #2c3e50;
         }
         button {
-            background-color: #4CAF50;
+            background-color: #3498db;
             color: white;
             border: none;
             padding: 10px 15px;
@@ -43,25 +51,25 @@
             transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #45a049;
+            background-color: #2980b9;
         }
         button.delete {
-            background-color: #f44336;
+            background-color: #e74c3c;
         }
         button.delete:hover {
-            background-color: #d32f2f;
+            background-color: #c0392b;
         }
         button.edit {
-            background-color: #2196F3;
+            background-color: #f39c12;
         }
         button.edit:hover {
-            background-color: #0b7dda;
+            background-color: #d35400;
         }
         button.reset {
-            background-color: #ff9800;
+            background-color: #95a5a6;
         }
         button.reset:hover {
-            background-color: #e68a00;
+            background-color: #7f8c8d;
         }
         #result {
             font-size: 24px;
@@ -69,18 +77,20 @@
             text-align: center;
             margin: 20px 0;
             padding: 15px;
-            background-color: #f0f0f0;
+            background-color: #f0f8ff;
             border-radius: 4px;
+            min-height: 60px;
         }
         #options-list {
             list-style-type: none;
             padding: 0;
+            margin: 20px 0;
         }
         #options-list li {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
+            padding: 10px;
             border-bottom: 1px solid #eee;
         }
         #options-list li:last-child {
@@ -92,148 +102,126 @@
         }
         #new-option {
             width: 70%;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            margin-right: 5px;
         }
-        .update-notice {
-            background-color: #fff8e1;
-            padding: 10px;
-            border-radius: 4px;
+        .input-group {
+            display: flex;
             margin-bottom: 15px;
-            display: none;
-        }
-        .update-notice.show {
-            display: block;
         }
     </style>
 </head>
 <body>
-    <h1>Tirage au sort d'options</h1>
+    <h1>Roulette - Tirage au sort</h1>
 
-    <!-- Message d'avertissement si le site semble obsolète -->
     <div id="update-notice" class="update-notice">
         🔄 Une nouvelle version est disponible !
-        <button id="refresh-btn" style="margin-left: 10px;">Rafraîchir</button>
+        <button id="refresh-btn">Rafraîchir maintenant</button>
     </div>
 
     <div class="container">
-        <div class="left-panel">
+        <div class="panel">
             <h2>Tirage au sort</h2>
             <button id="draw-btn">Tirer au sort</button>
-            <div id="result">Aucune option disponible</div>
+            <div id="result">Cliquez sur "Tirer au sort" pour commencer</div>
         </div>
 
-        <div class="right-panel">
+        <div class="panel">
             <h2>Gestion des options</h2>
-            <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-                <input type="text" id="new-option" placeholder="Nouvelle option">
+            <div class="input-group">
+                <input type="text" id="new-option" placeholder="Ajouter une nouvelle option">
                 <button id="add-btn">Ajouter</button>
             </div>
             <ul id="options-list"></ul>
-            <button id="reset-btn" class="reset">Réinitialiser</button>
+            <button id="reset-btn" class="reset">Réinitialiser les options</button>
         </div>
     </div>
 
     <script>
-        // Version du site (à changer à chaque mise à jour)
-        const SITE_VERSION = "1.1";
+        // Version actuelle du site (à incrémenter à chaque mise à jour)
+        const CURRENT_VERSION = "1.2";
 
         // Options par défaut
         const DEFAULT_OPTIONS = [
             "Edging 30 min",
             "+3 jours",
-            "–2 jours",
-            "Edging 1 h",
-            "Plug"
+            "-2 jours",
+            "Edging 1h",
+            "Plug anal",
+            "Baise le God",
+            "+ 5 jours",
+            "- 5 jours",
         ];
-
-        // Charger les options depuis le Local Storage
-        let options = JSON.parse(localStorage.getItem('options')) || [...DEFAULT_OPTIONS];
-
-        // Vérifier si une mise à jour est disponible
-        function checkForUpdates() {
-            const savedVersion = localStorage.getItem('siteVersion');
-            if (savedVersion !== SITE_VERSION) {
-                document.getElementById('update-notice').classList.add('show');
-                localStorage.setItem('siteVersion', SITE_VERSION);
-            }
-        }
-
-        // Sauvegarder les options dans le Local Storage
-        function saveOptions() {
-            localStorage.setItem('options', JSON.stringify(options));
-        }
-
-        // Afficher les options dans la liste
-        function renderOptions() {
-            const optionsList = document.getElementById('options-list');
-            optionsList.innerHTML = '';
-
-            options.forEach(option => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${option}</span>
-                    <div class="option-buttons">
-                        <button class="edit" data-option="${option}">Éditer</button>
-                        <button class="delete" data-option="${option}">Supprimer</button>
-                    </div>
-                `;
-                optionsList.appendChild(li);
-            });
-
-            // Ajouter les événements aux boutons
-            document.querySelectorAll('.delete').forEach(button => {
-                button.addEventListener('click', function() {
-                    const optionToDelete = this.dataset.option;
-                    options = options.filter(opt => opt !== optionToDelete);
-                    saveOptions();
-                    renderOptions();
-                });
-            });
-
-            document.querySelectorAll('.edit').forEach(button => {
-                button.addEventListener('click', function() {
-                    const oldOption = this.dataset.option;
-                    const newOption = prompt("Modifier l'option :", oldOption);
-                    if (newOption && newOption.trim() !== "") {
-                        const index = options.indexOf(oldOption);
-                        options[index] = newOption.trim();
-                        saveOptions();
-                        renderOptions();
-                    }
-                });
-            });
-        }
-
-        // Fonction pour éditer une option
-        function editOption(li, oldOption) {
-            const newOption = prompt("Modifier l'option :", oldOption);
-            if (newOption && newOption.trim() !== "") {
-                const index = options.indexOf(oldOption);
-                options[index] = newOption.trim();
-                saveOptions();
-                renderOptions();
-            }
-        }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier les mises à jour
-            checkForUpdates();
+            // Vérification de la version
+            const savedVersion = localStorage.getItem('rouletteVersion');
+            if (savedVersion !== CURRENT_VERSION) {
+                document.getElementById('update-notice').classList.add('show');
+                localStorage.setItem('rouletteVersion', CURRENT_VERSION);
+            }
 
-            // Bouton "Rafraîchir" pour forcer le rechargement
+            // Chargement des options
+            let options = JSON.parse(localStorage.getItem('rouletteOptions')) || [...DEFAULT_OPTIONS];
+
+            // Bouton de rafraîchissement
             document.getElementById('refresh-btn').addEventListener('click', function() {
-                window.location.reload(true); // true = ignore le cache
+                window.location.reload(true);
             });
+
+            // Fonction pour sauvegarder les options
+            function saveOptions() {
+                localStorage.setItem('rouletteOptions', JSON.stringify(options));
+            }
+
+            // Fonction pour afficher les options
+            function renderOptions() {
+                const optionsList = document.getElementById('options-list');
+                optionsList.innerHTML = '';
+
+                options.forEach((option, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${option}</span>
+                        <div class="option-buttons">
+                            <button class="edit" data-index="${index}">Éditer</button>
+                            <button class="delete" data-index="${index}">Supprimer</button>
+                        </div>
+                    `;
+                    optionsList.appendChild(li);
+                });
+
+                // Ajout des événements
+                document.querySelectorAll('.delete').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        options.splice(index, 1);
+                        saveOptions();
+                        renderOptions();
+                    });
+                });
+
+                document.querySelectorAll('.edit').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.dataset.index);
+                        const newValue = prompt("Modifier l'option :", options[index]);
+                        if (newValue && newValue.trim() !== "") {
+                            options[index] = newValue.trim();
+                            saveOptions();
+                            renderOptions();
+                        }
+                    });
+                });
+            }
 
             // Bouton "Ajouter"
             document.getElementById('add-btn').addEventListener('click', function() {
-                const newOptionInput = document.getElementById('new-option');
-                const newOption = newOptionInput.value.trim();
-
+                const newOption = document.getElementById('new-option').value.trim();
                 if (newOption === "") {
-                    alert("Veuillez entrer une option valide.");
+                    alert("Veuillez entrer une option valide");
                     return;
                 }
 
@@ -245,33 +233,31 @@
                 options.push(newOption);
                 saveOptions();
                 renderOptions();
-                newOptionInput.value = "";
+                document.getElementById('new-option').value = "";
             });
 
             // Bouton "Tirer au sort"
             document.getElementById('draw-btn').addEventListener('click', function() {
-                const resultDiv = document.getElementById('result');
-
                 if (options.length === 0) {
-                    resultDiv.textContent = "Aucune option disponible";
+                    document.getElementById('result').textContent = "Aucune option disponible";
                     return;
                 }
 
                 const randomIndex = Math.floor(Math.random() * options.length);
-                const selectedOption = options[randomIndex];
-                resultDiv.textContent = selectedOption;
+                document.getElementById('result').textContent = options[randomIndex];
             });
 
             // Bouton "Réinitialiser"
             document.getElementById('reset-btn').addEventListener('click', function() {
-                if (confirm("Voulez-vous vraiment réinitialiser les options ?\n(Cela supprimera vos modifications)")) {
+                if (confirm("Voulez-vous vraiment réinitialiser les options ?")) {
                     options = [...DEFAULT_OPTIONS];
                     saveOptions();
                     renderOptions();
+                    document.getElementById('result').textContent = "Options réinitialisées";
                 }
             });
 
-            // Initialiser l'affichage
+            // Initialisation
             renderOptions();
         });
     </script>
