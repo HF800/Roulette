@@ -57,6 +57,12 @@
         button.edit:hover {
             background-color: #0b7dda;
         }
+        button.reset {
+            background-color: #ff9800;
+        }
+        button.reset:hover {
+            background-color: #e68a00;
+        }
         #result {
             font-size: 24px;
             font-weight: bold;
@@ -90,6 +96,11 @@
             width: 100%;
             box-sizing: border-box;
         }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -108,42 +119,11 @@
                 <input type="text" id="new-option" placeholder="Nouvelle option">
                 <button id="add-button">Ajouter</button>
             </div>
+            <div class="controls">
+                <button id="reset-button" class="reset">Réinitialiser</button>
+            </div>
             <ul id="options-list">
-                <li>
-                    <span>Edging 30 min</span>
-                    <div class="option-actions">
-                        <button class="edit" data-option="Edging 30 min">Éditer</button>
-                        <button class="delete" data-option="Edging 30 min">Supprimer</button>
-                    </div>
-                </li>
-                <li>
-                    <span>+3 jours</span>
-                    <div class="option-actions">
-                        <button class="edit" data-option="+3 jours">Éditer</button>
-                        <button class="delete" data-option="+3 jours">Supprimer</button>
-                    </div>
-                </li>
-                <li>
-                    <span>–2 jours</span>
-                    <div class="option-actions">
-                        <button class="edit" data-option="–2 jours">Éditer</button>
-                        <button class="delete" data-option="–2 jours">Supprimer</button>
-                    </div>
-                </li>
-                <li>
-                    <span>Edging 1 h</span>
-                    <div class="option-actions">
-                        <button class="edit" data-option="Edging 1 h">Éditer</button>
-                        <button class="delete" data-option="Edging 1 h">Supprimer</button>
-                    </div>
-                </li>
-                <li>
-                    <span>Plug</span>
-                    <div class="option-actions">
-                        <button class="edit" data-option="Plug">Éditer</button>
-                        <button class="delete" data-option="Plug">Supprimer</button>
-                    </div>
-                </li>
+                <!-- Les options seront chargées depuis le Local Storage -->
             </ul>
         </div>
     </div>
@@ -155,11 +135,96 @@
             const optionsList = document.getElementById('options-list');
             const newOptionInput = document.getElementById('new-option');
             const addButton = document.getElementById('add-button');
+            const resetButton = document.getElementById('reset-button');
+
+            // Options par défaut
+            const DEFAULT_OPTIONS = [
+                "Edging 30 min",
+                "+3 jours",
+                "–2 jours",
+                "Edging 1 h",
+                "Plug"
+            ];
+
+            // Charger les options depuis le Local Storage (ou utiliser les valeurs par défaut)
+            let options = JSON.parse(localStorage.getItem('options')) || DEFAULT_OPTIONS;
+
+            // Fonction pour sauvegarder les options dans le Local Storage
+            function saveOptions() {
+                localStorage.setItem('options', JSON.stringify(options));
+            }
+
+            // Fonction pour afficher les options dans la liste
+            function renderOptions() {
+                optionsList.innerHTML = '';
+                options.forEach(option => {
+                    const li = document.createElement('li');
+
+                    const span = document.createElement('span');
+                    span.textContent = option;
+
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'option-actions';
+
+                    const editButton = document.createElement('button');
+                    editButton.className = 'edit';
+                    editButton.textContent = 'Éditer';
+                    editButton.dataset.option = option;
+                    editButton.addEventListener('click', function() {
+                        editOption(li, option);
+                    });
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete';
+                    deleteButton.textContent = 'Supprimer';
+                    deleteButton.dataset.option = option;
+                    deleteButton.addEventListener('click', function() {
+                        const index = options.indexOf(option);
+                        if (index !== -1) {
+                            options.splice(index, 1);
+                            saveOptions();
+                            renderOptions();
+                        }
+                    });
+
+                    actionsDiv.appendChild(editButton);
+                    actionsDiv.appendChild(deleteButton);
+
+                    li.appendChild(span);
+                    li.appendChild(actionsDiv);
+
+                    optionsList.appendChild(li);
+                });
+            }
+
+            // Fonction pour éditer une option
+            function editOption(li, oldOption) {
+                const newOption = prompt("Modifier l'option:", oldOption);
+                if (newOption !== null && newOption.trim() !== '') {
+                    const index = options.indexOf(oldOption);
+                    if (index !== -1) {
+                        options[index] = newOption.trim();
+                        saveOptions();
+                        renderOptions();
+                    }
+                }
+            }
+
+            // Fonction pour ajouter une nouvelle option
+            addButton.addEventListener('click', function() {
+                const newOption = newOptionInput.value.trim();
+                if (newOption && !options.includes(newOption)) {
+                    options.push(newOption);
+                    saveOptions();
+                    renderOptions();
+                    newOptionInput.value = '';
+                } else if (options.includes(newOption)) {
+                    alert("Cette option existe déjà !");
+                }
+            });
 
             // Fonction pour tirer au sort une option
             drawButton.addEventListener('click', function() {
-                const options = Array.from(optionsList.querySelectorAll('li span')).map(span => span.textContent);
-
                 if (options.length === 0) {
                     resultDiv.textContent = "Aucune option disponible";
                     return;
@@ -167,85 +232,20 @@
 
                 const randomIndex = Math.floor(Math.random() * options.length);
                 const selectedOption = options[randomIndex];
-
                 resultDiv.textContent = selectedOption;
             });
 
-            // Fonction pour ajouter une nouvelle option
-            addButton.addEventListener('click', function() {
-                const newOption = newOptionInput.value.trim();
-
-                if (newOption) {
-                    addOptionToList(newOption);
-                    newOptionInput.value = '';
+            // Fonction pour réinitialiser les options (avec confirmation)
+            resetButton.addEventListener('click', function() {
+                if (confirm("Voulez-vous vraiment réinitialiser les options ?\n(Cela supprimera vos modifications)")) {
+                    options = [...DEFAULT_OPTIONS];
+                    saveOptions();
+                    renderOptions();
                 }
             });
 
-            // Fonction pour ajouter une option à la liste
-            function addOptionToList(option) {
-                const li = document.createElement('li');
-
-                const span = document.createElement('span');
-                span.textContent = option;
-
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'option-actions';
-
-                const editButton = document.createElement('button');
-                editButton.className = 'edit';
-                editButton.textContent = 'Éditer';
-                editButton.dataset.option = option;
-                editButton.addEventListener('click', function() {
-                    editOption(li, option);
-                });
-
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'delete';
-                deleteButton.textContent = 'Supprimer';
-                deleteButton.dataset.option = option;
-                deleteButton.addEventListener('click', function() {
-                    li.remove();
-                });
-
-                actionsDiv.appendChild(editButton);
-                actionsDiv.appendChild(deleteButton);
-
-                li.appendChild(span);
-                li.appendChild(actionsDiv);
-
-                optionsList.appendChild(li);
-            }
-
-            // Fonction pour éditer une option
-            function editOption(li, oldOption) {
-                const newOption = prompt("Modifier l'option:", oldOption);
-
-                if (newOption !== null && newOption.trim() !== '') {
-                    const span = li.querySelector('span');
-                    span.textContent = newOption.trim();
-
-                    const editButton = li.querySelector('.edit');
-                    editButton.dataset.option = newOption.trim();
-
-                    const deleteButton = li.querySelector('.delete');
-                    deleteButton.dataset.option = newOption.trim();
-                }
-            }
-
-            // Gestion des boutons existants
-            document.querySelectorAll('.delete').forEach(button => {
-                button.addEventListener('click', function() {
-                    this.closest('li').remove();
-                });
-            });
-
-            document.querySelectorAll('.edit').forEach(button => {
-                button.addEventListener('click', function() {
-                    const li = this.closest('li');
-                    const oldOption = this.dataset.option;
-                    editOption(li, oldOption);
-                });
-            });
+            // Initialisation : charger et afficher les options
+            renderOptions();
         });
     </script>
 </body>
