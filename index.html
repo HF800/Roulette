@@ -1,228 +1,252 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roulette de Défis</title>
-
-<style>
-body {
-  margin: 0;
-  background: radial-gradient(circle, #111, #000);
-  color: #fff;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  display: flex;
-  justify-content: center;
-  min-height: 100vh;
-}
-
-.container {
-  width: 100%;
-  max-width: 380px;
-  padding: 12px;
-  text-align: center;
-}
-
-.pointer {
-  width: 0;
-  height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 30px solid red;
-  margin: 0 auto -10px;
-}
-
-canvas {
-  width: 100%;
-  border-radius: 50%;
-}
-
-button {
-  width: 100%;
-  padding: 14px;
-  font-size: 17px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  background: linear-gradient(145deg, #b00020, #ff0033);
-  color: white;
-}
-
-button:active { transform: scale(0.97); }
-
-#result {
-  margin-top: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  min-height: 40px;
-}
-
-.editor {
-  margin-top: 16px;
-  background: #111;
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.editor h3 {
-  margin: 6px 0 10px;
-  font-size: 16px;
-}
-
-.editor input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  margin-bottom: 6px;
-}
-
-.list {
-  max-height: 160px;
-  overflow-y: auto;
-  margin-top: 6px;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #222;
-  padding: 6px 8px;
-  border-radius: 6px;
-  margin-bottom: 4px;
-  font-size: 14px;
-}
-
-.item button {
-  width: auto;
-  padding: 4px 8px;
-  font-size: 12px;
-  background: #444;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tirage au sort d'options</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .left-panel, .right-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .left-panel {
+            flex: 1;
+        }
+        .right-panel {
+            flex: 1;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button.delete:hover {
+            background-color: #d32f2f;
+        }
+        button.edit {
+            background-color: #2196F3;
+        }
+        button.edit:hover {
+            background-color: #0b7dda;
+        }
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+        }
+        #options-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #options-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        #options-list li:last-child {
+            border-bottom: none;
+        }
+        .option-actions {
+            display: flex;
+            gap: 5px;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
-
 <body>
-<div class="container">
+    <h1>Tirage au sort d'options</h1>
 
-  <div class="pointer"></div>
-  <canvas id="wheel" width="300" height="300"></canvas>
+    <div class="container">
+        <div class="left-panel">
+            <h2>Tirage au sort</h2>
+            <button id="draw-button">Tirer au sort</button>
+            <div id="result">Résultat apparaîtra ici</div>
+        </div>
 
-  <button onclick="spin()">🎰 LANCER LA ROULETTE</button>
-  <div id="result"></div>
+        <div class="right-panel">
+            <h2>Liste des options</h2>
+            <div>
+                <input type="text" id="new-option" placeholder="Nouvelle option">
+                <button id="add-button">Ajouter</button>
+            </div>
+            <ul id="options-list">
+                <li>
+                    <span>Edging 30 min</span>
+                    <div class="option-actions">
+                        <button class="edit" data-option="Edging 30 min">Éditer</button>
+                        <button class="delete" data-option="Edging 30 min">Supprimer</button>
+                    </div>
+                </li>
+                <li>
+                    <span>+3 jours</span>
+                    <div class="option-actions">
+                        <button class="edit" data-option="+3 jours">Éditer</button>
+                        <button class="delete" data-option="+3 jours">Supprimer</button>
+                    </div>
+                </li>
+                <li>
+                    <span>–2 jours</span>
+                    <div class="option-actions">
+                        <button class="edit" data-option="–2 jours">Éditer</button>
+                        <button class="delete" data-option="–2 jours">Supprimer</button>
+                    </div>
+                </li>
+                <li>
+                    <span>Edging 1 h</span>
+                    <div class="option-actions">
+                        <button class="edit" data-option="Edging 1 h">Éditer</button>
+                        <button class="delete" data-option="Edging 1 h">Supprimer</button>
+                    </div>
+                </li>
+                <li>
+                    <span>Plug</span>
+                    <div class="option-actions">
+                        <button class="edit" data-option="Plug">Éditer</button>
+                        <button class="delete" data-option="Plug">Supprimer</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
 
-  <div class="editor">
-    <h3>✍️ Ajouter un défi</h3>
-    <input id="newItem" placeholder="Ex : Edging 45 min">
-    <button onclick="addItem()">➕ Ajouter</button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const drawButton = document.getElementById('draw-button');
+            const resultDiv = document.getElementById('result');
+            const optionsList = document.getElementById('options-list');
+            const newOptionInput = document.getElementById('new-option');
+            const addButton = document.getElementById('add-button');
 
-    <div class="list" id="list"></div>
-  </div>
+            // Fonction pour tirer au sort une option
+            drawButton.addEventListener('click', function() {
+                const options = Array.from(optionsList.querySelectorAll('li span')).map(span => span.textContent);
 
-</div>
+                if (options.length === 0) {
+                    resultDiv.textContent = "Aucune option disponible";
+                    return;
+                }
 
-<script>
-let choices = JSON.parse(localStorage.getItem("rouletteChoices")) || [
-  "Edging 30 min",
-  "+3 jours",
-  "Jackpot 🔥"
-];
+                const randomIndex = Math.floor(Math.random() * options.length);
+                const selectedOption = options[randomIndex];
 
-const canvas = document.getElementById("wheel");
-const ctx = canvas.getContext("2d");
-const size = canvas.width;
-const center = size / 2;
-const radius = center;
-let angle = 0;
-let spinning = false;
+                resultDiv.textContent = selectedOption;
+            });
 
-function save() {
-  localStorage.setItem("rouletteChoices", JSON.stringify(choices));
-}
+            // Fonction pour ajouter une nouvelle option
+            addButton.addEventListener('click', function() {
+                const newOption = newOptionInput.value.trim();
 
-function drawWheel() {
-  ctx.clearRect(0, 0, size, size);
-  const slice = 2 * Math.PI / choices.length;
+                if (newOption) {
+                    addOptionToList(newOption);
+                    newOptionInput.value = '';
+                }
+            });
 
-  choices.forEach((text, i) => {
-    const start = angle + i * slice;
-    ctx.beginPath();
-    ctx.moveTo(center, center);
-    ctx.arc(center, center, radius, start, start + slice);
-    ctx.fillStyle = i % 2 ? "#333" : "#222";
-    ctx.fill();
+            // Fonction pour ajouter une option à la liste
+            function addOptionToList(option) {
+                const li = document.createElement('li');
 
-    ctx.save();
-    ctx.translate(center, center);
-    ctx.rotate(start + slice / 2);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#fff";
-    ctx.font = "14px sans-serif";
-    ctx.fillText(text, radius - 8, 4);
-    ctx.restore();
-  });
-}
+                const span = document.createElement('span');
+                span.textContent = option;
 
-function updateList() {
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-  choices.forEach((c, i) => {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `<span>${c}</span><button onclick="removeItem(${i})">✖</button>`;
-    list.appendChild(div);
-  });
-  drawWheel();
-  save();
-}
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'option-actions';
 
-function addItem() {
-  const input = document.getElementById("newItem");
-  if (!input.value.trim()) return;
-  choices.push(input.value.trim());
-  input.value = "";
-  updateList();
-}
+                const editButton = document.createElement('button');
+                editButton.className = 'edit';
+                editButton.textContent = 'Éditer';
+                editButton.dataset.option = option;
+                editButton.addEventListener('click', function() {
+                    editOption(li, option);
+                });
 
-function removeItem(i) {
-  choices.splice(i, 1);
-  updateList();
-}
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete';
+                deleteButton.textContent = 'Supprimer';
+                deleteButton.dataset.option = option;
+                deleteButton.addEventListener('click', function() {
+                    li.remove();
+                });
 
-function spin() {
-  if (spinning || choices.length < 2) return;
-  spinning = true;
-  document.getElementById("result").innerText = "";
+                actionsDiv.appendChild(editButton);
+                actionsDiv.appendChild(deleteButton);
 
-  if (navigator.vibrate) navigator.vibrate(40);
+                li.appendChild(span);
+                li.appendChild(actionsDiv);
 
-  let velocity = Math.random() * 0.4 + 0.4;
+                optionsList.appendChild(li);
+            }
 
-  function animate() {
-    angle += velocity;
-    velocity *= 0.985;
-    drawWheel();
+            // Fonction pour éditer une option
+            function editOption(li, oldOption) {
+                const newOption = prompt("Modifier l'option:", oldOption);
 
-    if (velocity > 0.002) {
-      requestAnimationFrame(animate);
-    } else {
-      spinning = false;
-      const slice = 2 * Math.PI / choices.length;
-      const index = Math.floor(
-        ((2 * Math.PI - (angle % (2 * Math.PI))) % (2 * Math.PI)) / slice
-      );
-      const result = choices[index];
-      document.getElementById("result").innerText = "🎯 Résultat : " + result;
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-    }
-  }
+                if (newOption !== null && newOption.trim() !== '') {
+                    const span = li.querySelector('span');
+                    span.textContent = newOption.trim();
 
-  animate();
-}
+                    const editButton = li.querySelector('.edit');
+                    editButton.dataset.option = newOption.trim();
 
-updateList();
-</script>
+                    const deleteButton = li.querySelector('.delete');
+                    deleteButton.dataset.option = newOption.trim();
+                }
+            }
+
+            // Gestion des boutons existants
+            document.querySelectorAll('.delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('li').remove();
+                });
+            });
+
+            document.querySelectorAll('.edit').forEach(button => {
+                button.addEventListener('click', function() {
+                    const li = this.closest('li');
+                    const oldOption = this.dataset.option;
+                    editOption(li, oldOption);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
