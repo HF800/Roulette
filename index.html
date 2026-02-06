@@ -3,64 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roulette de Décision</title>
+<title>Roulette de Défis</title>
 
 <style>
-  body {
-    margin: 0;
-    background: radial-gradient(circle, #111, #000);
-    color: #fff;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
+body {
+  margin: 0;
+  background: radial-gradient(circle, #111, #000);
+  color: #fff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
 
-  .container {
-    text-align: center;
-    width: 100%;
-    max-width: 360px;
-  }
+.container {
+  width: 100%;
+  max-width: 380px;
+  padding: 12px;
+  text-align: center;
+}
 
-  canvas {
-    width: 100%;
-    height: auto;
-    border-radius: 50%;
-  }
+.pointer {
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 30px solid red;
+  margin: 0 auto -10px;
+}
 
-  .pointer {
-    width: 0;
-    height: 0;
-    border-left: 14px solid transparent;
-    border-right: 14px solid transparent;
-    border-bottom: 30px solid red;
-    margin: 0 auto -10px;
-  }
+canvas {
+  width: 100%;
+  border-radius: 50%;
+}
 
-  button {
-    margin-top: 20px;
-    padding: 16px;
-    width: 100%;
-    font-size: 18px;
-    background: linear-gradient(145deg, #b00020, #ff0033);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-  }
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 17px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  background: linear-gradient(145deg, #b00020, #ff0033);
+  color: white;
+}
 
-  button:active {
-    transform: scale(0.97);
-  }
+button:active { transform: scale(0.97); }
 
-  #result {
-    margin-top: 16px;
-    font-size: 18px;
-    font-weight: bold;
-    min-height: 48px;
-  }
+#result {
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  min-height: 40px;
+}
+
+.editor {
+  margin-top: 16px;
+  background: #111;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.editor h3 {
+  margin: 6px 0 10px;
+  font-size: 16px;
+}
+
+.editor input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 6px;
+}
+
+.list {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-top: 6px;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #222;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.item button {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #444;
+}
 </style>
 </head>
 
@@ -73,21 +113,20 @@
   <button onclick="spin()">🎰 LANCER LA ROULETTE</button>
   <div id="result"></div>
 
+  <div class="editor">
+    <h3>✍️ Ajouter un défi</h3>
+    <input id="newItem" placeholder="Ex : Edging 45 min">
+    <button onclick="addItem()">➕ Ajouter</button>
+
+    <div class="list" id="list"></div>
+  </div>
+
 </div>
 
 <script>
-const choices = [
-  "–1 jour",
-  "+3 jours",
+let choices = JSON.parse(localStorage.getItem("rouletteChoices")) || [
   "Edging 30 min",
-  "–2 jours",
-  "+5 jours",
-  "Edging 45 min",
-  "+7 jours",
-  "Edging 1 h",
-  "+10 jours",
-  "Double ou Rien",
-  "Edging 2 h",
+  "+3 jours",
   "Jackpot 🔥"
 ];
 
@@ -99,17 +138,20 @@ const radius = center;
 let angle = 0;
 let spinning = false;
 
-function drawWheel() {
-  const slice = 2 * Math.PI / choices.length;
+function save() {
+  localStorage.setItem("rouletteChoices", JSON.stringify(choices));
+}
 
+function drawWheel() {
   ctx.clearRect(0, 0, size, size);
+  const slice = 2 * Math.PI / choices.length;
 
   choices.forEach((text, i) => {
     const start = angle + i * slice;
     ctx.beginPath();
     ctx.moveTo(center, center);
     ctx.arc(center, center, radius, start, start + slice);
-    ctx.fillStyle = i % 2 === 0 ? "#222" : "#444";
+    ctx.fillStyle = i % 2 ? "#333" : "#222";
     ctx.fill();
 
     ctx.save();
@@ -118,26 +160,49 @@ function drawWheel() {
     ctx.textAlign = "right";
     ctx.fillStyle = "#fff";
     ctx.font = "14px sans-serif";
-    ctx.fillText(text, radius - 10, 5);
+    ctx.fillText(text, radius - 8, 4);
     ctx.restore();
   });
 }
 
-drawWheel();
+function updateList() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  choices.forEach((c, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<span>${c}</span><button onclick="removeItem(${i})">✖</button>`;
+    list.appendChild(div);
+  });
+  drawWheel();
+  save();
+}
+
+function addItem() {
+  const input = document.getElementById("newItem");
+  if (!input.value.trim()) return;
+  choices.push(input.value.trim());
+  input.value = "";
+  updateList();
+}
+
+function removeItem(i) {
+  choices.splice(i, 1);
+  updateList();
+}
 
 function spin() {
-  if (spinning) return;
+  if (spinning || choices.length < 2) return;
   spinning = true;
   document.getElementById("result").innerText = "";
 
-  if (navigator.vibrate) navigator.vibrate(50);
+  if (navigator.vibrate) navigator.vibrate(40);
 
-  let velocity = Math.random() * 0.4 + 0.35;
+  let velocity = Math.random() * 0.4 + 0.4;
 
   function animate() {
     angle += velocity;
     velocity *= 0.985;
-
     drawWheel();
 
     if (velocity > 0.002) {
@@ -149,14 +214,15 @@ function spin() {
         ((2 * Math.PI - (angle % (2 * Math.PI))) % (2 * Math.PI)) / slice
       );
       const result = choices[index];
-      document.getElementById("result").innerText =
-        "🎯 Résultat : " + result;
+      document.getElementById("result").innerText = "🎯 Résultat : " + result;
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     }
   }
 
   animate();
 }
+
+updateList();
 </script>
 </body>
 </html>
