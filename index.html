@@ -68,8 +68,8 @@
             font-weight: bold;
             text-align: center;
             margin: 20px 0;
-            padding: 20px;
-            background-color: #e9f7ef;
+            padding: 15px;
+            background-color: #f0f0f0;
             border-radius: 4px;
         }
         #options-list {
@@ -80,151 +80,178 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 8px;
             border-bottom: 1px solid #eee;
         }
         #options-list li:last-child {
             border-bottom: none;
         }
-        .option-actions {
+        .option-buttons {
             display: flex;
             gap: 5px;
         }
-        input {
+        #new-option {
+            width: 70%;
             padding: 8px;
-            margin: 5px 0;
-            width: 100%;
-            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
+        .update-notice {
+            background-color: #fff8e1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .update-notice.show {
+            display: block;
         }
     </style>
 </head>
 <body>
     <h1>Tirage au sort d'options</h1>
 
+    <!-- Message d'avertissement si le site semble obsolète -->
+    <div id="update-notice" class="update-notice">
+        🔄 Une nouvelle version est disponible !
+        <button id="refresh-btn" style="margin-left: 10px;">Rafraîchir</button>
+    </div>
+
     <div class="container">
         <div class="left-panel">
             <h2>Tirage au sort</h2>
-            <button id="draw-button">Tirer au sort</button>
-            <div id="result">Résultat apparaîtra ici</div>
+            <button id="draw-btn">Tirer au sort</button>
+            <div id="result">Aucune option disponible</div>
         </div>
 
         <div class="right-panel">
-            <h2>Liste des options</h2>
-            <div>
+            <h2>Gestion des options</h2>
+            <div style="display: flex; gap: 5px; margin-bottom: 15px;">
                 <input type="text" id="new-option" placeholder="Nouvelle option">
-                <button id="add-button">Ajouter</button>
+                <button id="add-btn">Ajouter</button>
             </div>
-            <div class="controls">
-                <button id="reset-button" class="reset">Réinitialiser</button>
-            </div>
-            <ul id="options-list">
-                <!-- Les options seront chargées depuis le Local Storage -->
-            </ul>
+            <ul id="options-list"></ul>
+            <button id="reset-btn" class="reset">Réinitialiser</button>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const drawButton = document.getElementById('draw-button');
-            const resultDiv = document.getElementById('result');
+        // Version du site (à changer à chaque mise à jour)
+        const SITE_VERSION = "1.1";
+
+        // Options par défaut
+        const DEFAULT_OPTIONS = [
+            "Edging 30 min",
+            "+3 jours",
+            "–2 jours",
+            "Edging 1 h",
+            "Plug"
+        ];
+
+        // Charger les options depuis le Local Storage
+        let options = JSON.parse(localStorage.getItem('options')) || [...DEFAULT_OPTIONS];
+
+        // Vérifier si une mise à jour est disponible
+        function checkForUpdates() {
+            const savedVersion = localStorage.getItem('siteVersion');
+            if (savedVersion !== SITE_VERSION) {
+                document.getElementById('update-notice').classList.add('show');
+                localStorage.setItem('siteVersion', SITE_VERSION);
+            }
+        }
+
+        // Sauvegarder les options dans le Local Storage
+        function saveOptions() {
+            localStorage.setItem('options', JSON.stringify(options));
+        }
+
+        // Afficher les options dans la liste
+        function renderOptions() {
             const optionsList = document.getElementById('options-list');
-            const newOptionInput = document.getElementById('new-option');
-            const addButton = document.getElementById('add-button');
-            const resetButton = document.getElementById('reset-button');
+            optionsList.innerHTML = '';
 
-            // Options par défaut
-            const DEFAULT_OPTIONS = [
-                "Edging 30 min",
-                "+3 jours",
-                "–2 jours",
-                "Edging 1 h",
-                "Plug"
-            ];
+            options.forEach(option => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${option}</span>
+                    <div class="option-buttons">
+                        <button class="edit" data-option="${option}">Éditer</button>
+                        <button class="delete" data-option="${option}">Supprimer</button>
+                    </div>
+                `;
+                optionsList.appendChild(li);
+            });
 
-            // Charger les options depuis le Local Storage (ou utiliser les valeurs par défaut)
-            let options = JSON.parse(localStorage.getItem('options')) || DEFAULT_OPTIONS;
-
-            // Fonction pour sauvegarder les options dans le Local Storage
-            function saveOptions() {
-                localStorage.setItem('options', JSON.stringify(options));
-            }
-
-            // Fonction pour afficher les options dans la liste
-            function renderOptions() {
-                optionsList.innerHTML = '';
-                options.forEach(option => {
-                    const li = document.createElement('li');
-
-                    const span = document.createElement('span');
-                    span.textContent = option;
-
-                    const actionsDiv = document.createElement('div');
-                    actionsDiv.className = 'option-actions';
-
-                    const editButton = document.createElement('button');
-                    editButton.className = 'edit';
-                    editButton.textContent = 'Éditer';
-                    editButton.dataset.option = option;
-                    editButton.addEventListener('click', function() {
-                        editOption(li, option);
-                    });
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.className = 'delete';
-                    deleteButton.textContent = 'Supprimer';
-                    deleteButton.dataset.option = option;
-                    deleteButton.addEventListener('click', function() {
-                        const index = options.indexOf(option);
-                        if (index !== -1) {
-                            options.splice(index, 1);
-                            saveOptions();
-                            renderOptions();
-                        }
-                    });
-
-                    actionsDiv.appendChild(editButton);
-                    actionsDiv.appendChild(deleteButton);
-
-                    li.appendChild(span);
-                    li.appendChild(actionsDiv);
-
-                    optionsList.appendChild(li);
+            // Ajouter les événements aux boutons
+            document.querySelectorAll('.delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const optionToDelete = this.dataset.option;
+                    options = options.filter(opt => opt !== optionToDelete);
+                    saveOptions();
+                    renderOptions();
                 });
-            }
+            });
 
-            // Fonction pour éditer une option
-            function editOption(li, oldOption) {
-                const newOption = prompt("Modifier l'option:", oldOption);
-                if (newOption !== null && newOption.trim() !== '') {
-                    const index = options.indexOf(oldOption);
-                    if (index !== -1) {
+            document.querySelectorAll('.edit').forEach(button => {
+                button.addEventListener('click', function() {
+                    const oldOption = this.dataset.option;
+                    const newOption = prompt("Modifier l'option :", oldOption);
+                    if (newOption && newOption.trim() !== "") {
+                        const index = options.indexOf(oldOption);
                         options[index] = newOption.trim();
                         saveOptions();
                         renderOptions();
                     }
-                }
-            }
+                });
+            });
+        }
 
-            // Fonction pour ajouter une nouvelle option
-            addButton.addEventListener('click', function() {
-                const newOption = newOptionInput.value.trim();
-                if (newOption && !options.includes(newOption)) {
-                    options.push(newOption);
-                    saveOptions();
-                    renderOptions();
-                    newOptionInput.value = '';
-                } else if (options.includes(newOption)) {
-                    alert("Cette option existe déjà !");
-                }
+        // Fonction pour éditer une option
+        function editOption(li, oldOption) {
+            const newOption = prompt("Modifier l'option :", oldOption);
+            if (newOption && newOption.trim() !== "") {
+                const index = options.indexOf(oldOption);
+                options[index] = newOption.trim();
+                saveOptions();
+                renderOptions();
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier les mises à jour
+            checkForUpdates();
+
+            // Bouton "Rafraîchir" pour forcer le rechargement
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                window.location.reload(true); // true = ignore le cache
             });
 
-            // Fonction pour tirer au sort une option
-            drawButton.addEventListener('click', function() {
+            // Bouton "Ajouter"
+            document.getElementById('add-btn').addEventListener('click', function() {
+                const newOptionInput = document.getElementById('new-option');
+                const newOption = newOptionInput.value.trim();
+
+                if (newOption === "") {
+                    alert("Veuillez entrer une option valide.");
+                    return;
+                }
+
+                if (options.includes(newOption)) {
+                    alert("Cette option existe déjà !");
+                    return;
+                }
+
+                options.push(newOption);
+                saveOptions();
+                renderOptions();
+                newOptionInput.value = "";
+            });
+
+            // Bouton "Tirer au sort"
+            document.getElementById('draw-btn').addEventListener('click', function() {
+                const resultDiv = document.getElementById('result');
+
                 if (options.length === 0) {
                     resultDiv.textContent = "Aucune option disponible";
                     return;
@@ -235,8 +262,8 @@
                 resultDiv.textContent = selectedOption;
             });
 
-            // Fonction pour réinitialiser les options (avec confirmation)
-            resetButton.addEventListener('click', function() {
+            // Bouton "Réinitialiser"
+            document.getElementById('reset-btn').addEventListener('click', function() {
                 if (confirm("Voulez-vous vraiment réinitialiser les options ?\n(Cela supprimera vos modifications)")) {
                     options = [...DEFAULT_OPTIONS];
                     saveOptions();
@@ -244,7 +271,7 @@
                 }
             });
 
-            // Initialisation : charger et afficher les options
+            // Initialiser l'affichage
             renderOptions();
         });
     </script>
